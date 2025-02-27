@@ -118,6 +118,15 @@ def parse_args():
         "--chat_format",
         default='mistral',
     )
+    
+    # ** K SAMPLES FOR SYNTHETIC PROMPTS ** #
+    parser.add_argument(
+        "--k_samples",
+        type=int,
+        default=0,
+        help="Number of synthetic queries to sample."
+    )
+    
     args = parser.parse_args()
 
     ## post-process
@@ -151,6 +160,21 @@ PROMPT_TEMPLATES = {
     "open_qa":QA_PROMPT,
     'fact_checking':FECT_CHECKING_PROPMT,
 }
+
+# *** GENERATE SYNTHETIC QUERIES *** #
+@torch.no_grad()
+def generate_synthetic_queries(llm, tokenizer, original_query, k=5):
+
+    synthetic_queries = []
+    prompt_template = "Generate {} variations of this question while preserving the intent:\n\nQuestion: {}\n\nVariations:".format(k, original_query)
+    
+    inputs = tokenizer(prompt_template, return_tensors="pt", padding=True).to(llm.device)
+    output = llm.generate(**inputs, max_new_tokens=100, do_sample=True, temperature=0.7) # NOTE: temperature can change intent
+    
+    generated_text = tokenizer.decode(output[0], skip_special_tokens=True)
+    synthetic_queries = [q.strip() for q in generated_text.split("\n") if q.strip()]
+    
+    return synthetic_queries[:k]
 
 def get_start_prompt(task_type,use_rag,sample=None):
     if task_type == 'open_qa':
