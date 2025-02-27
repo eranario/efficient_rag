@@ -119,6 +119,14 @@ def parse_args():
         default='mistral',
     )
     
+    # ** K SAMPLES FOR SYNTHETIC PROMPTS ** #
+    parser.add_argument(
+        "--k_samples",
+        type=int,
+        default=0,
+        help="Number of synthetic queries to sample."
+    )
+    
     args = parser.parse_args()
 
     ## post-process
